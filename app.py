@@ -1,6 +1,7 @@
 #coding:utf-8
-# import grequests
+import grequests
 from pyquery import PyQuery as pq
+import requests
 
 baseURL = 'http://www.bioon.com.cn/corporation/'
 
@@ -10,10 +11,30 @@ def pp(l):
     for a in l:
         print a    
 
-def getCompanyCategoryAndURLPairs(index, e):
+def getCompanyCategoryList(index, e):
     category = pq(e)
     return category.next()('li .tt a').map(
-        lambda: {'category': category.text() +  ':' + pq(this).text(), 'url': baseURL + pq(this).attr('href') })
+        		lambda: {'category': category.text() +  ':' + pq(this).text(), 
+        				'url': baseURL + pq(this).attr('href') })
+
+def getCompanyListForOneCategory(url):
+	r = requests.get(url)
+	r.encoding = 'gb2312'
+
+	# list.asp?sortid=1&typeid=5&page=35
+	# list.asp?sortid=1&typeid=30&page=50
+	d = pq(r.text)
+	nextUrl = d('.seasonnav ul li:last a').attr('href')
+	print(nextUrl)
+		
+
+def getCompanyList(companyCategoryList):
+	# ['http://www.bioon.com.cn/corporation/list.asp?sortid=1&typeid=1'
+	#   ...
+	#   http://www.bioon.com.cn/corporation/list.asp?sortid=6&typeid=3']	
+	map(getCompanyListForOneCategory, [e['url'] for e in companyCategoryList])
+
+	# for res in grequests.map((grequests.get(u) for u in urls), size = 5):
 
 if __name__ == "__main__":
 
@@ -24,8 +45,9 @@ if __name__ == "__main__":
 # </li>
 # </ul>
     d = pq(filename = './index.html')
-    companyCategoryList = d('.content .company_category').map(getCompanyCategoryAndURLPairs)
-    pp(l)
+    companyCategoryList = d('.content .company_category').map(getCompanyCategoryList)
+    companyList = getCompanyList(companyCategoryList)
+
     # print(l)
     # categories = d('.content .company_category a').map(lambda: pq(this).text())
     # # pp(categories)
