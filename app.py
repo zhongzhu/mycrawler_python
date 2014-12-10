@@ -2,73 +2,54 @@
 import grequests
 from pyquery import PyQuery as pq
 import requests
+import re
+import itertools
+import json
 
 baseURL = 'http://www.bioon.com.cn/corporation/'
 
-def pp(l):
-    # print(type(l))
-    # print(l.decode('UTF-8').encode('gb2312'))
-    for a in l:
-        print a    
+def getCompanyListUrlsForOneCategory(url):
+    r = requests.get(url)
+    d = pq(r.text)
 
-def getCompanyCategoryList(index, e):
+    m = re.search(r'page=(\d+)', d('.seasonnav ul li:last a').attr('href'))
+    if m is None:
+        return []
+
+    # http://www.bioon.com.cn/corporation/list.asp?sortid=1&typeid=1&page=5
+    urls = [url + '&page=' + str(i) for i in range(1, int(m.group(1)) + 1)]
+
+    # return map(lambda response: pq(response.text)('.feature span a').map(lambda: pq(this).attr('href')), 
+    #     grequests.map((grequests.get(u) for u in urls), size = 10))
+    ret = []
+    for response in grequests.map((grequests.get(u) for u in urls), size = 10):
+        ret.extend(pq(response.text)('.feature span a').map(lambda: pq(this).attr('href')))
+
+    return ret
+        
+def getCompanyCategoryList():
+    d = pq(filename = './index.html')
+    return d('.content .company_category').map(getSubCategoryList)
+
+def getSubCategoryList(index, e):
     category = pq(e)
-    return category.next()('li .tt a').map(
-        		lambda: {'category': category.text() +  ':' + pq(this).text(), 
-        				'url': baseURL + pq(this).attr('href') })
+    return category.next()('li .tt a').map(lambda: baseURL + pq(this).attr('href'))
 
-def getCompanyListForOneCategory(url):
-	r = requests.get(url)
-	r.encoding = 'gb2312'
-
-	# list.asp?sortid=1&typeid=5&page=35
-	# list.asp?sortid=1&typeid=30&page=50
-	d = pq(r.text)
-	nextUrl = d('.seasonnav ul li:last a').attr('href')
-	print(nextUrl)
-		
 
 def getCompanyList(companyCategoryList):
-	# ['http://www.bioon.com.cn/corporation/list.asp?sortid=1&typeid=1'
-	#   ...
-	#   http://www.bioon.com.cn/corporation/list.asp?sortid=6&typeid=3']	
-	map(getCompanyListForOneCategory, [e['url'] for e in companyCategoryList])
-
-	# for res in grequests.map((grequests.get(u) for u in urls), size = 5):
+    ret = map(getCompanyListUrlsForOneCategory, companyCategoryList)            
+    return list(itertools.chain.from_iterable(ret)) # flatten the list
 
 if __name__ == "__main__":
 
-# <ul class="company_list">
-# <li>
-# <span class="tt"><a href="list.asp?sortid=6&typeid=21">其它</a></span>
-# <span class="itm">(1565)</span>
-# </li>
-# </ul>
-    d = pq(filename = './index.html')
-    companyCategoryList = d('.content .company_category').map(getCompanyCategoryList)
+    companyCategoryList = getCompanyCategoryList()
+    # companyCategoryList = companyCategoryList[0:1]
+    # print(companyCategoryList)
+
     companyList = getCompanyList(companyCategoryList)
-
-    # print(l)
-    # categories = d('.content .company_category a').map(lambda: pq(this).text())
-    # # pp(categories)
-    # sub_categories = d('.content .company_category').parent()('.company_list li .tt a').map(
-    #     lambda: (pq(this).attr('href'), pq(this).text()))
-    # pp(sub_categories)
+    # print(companyList)
+    with open('companyList.json', 'w') as f:
+        json.dump(companyList, f)
 
 
-
-
-    # urls = ['http://www.bioon.com.cn/corporation/index.asp']
-    # rs = (grequests.get(u) for u in urls)
-    # for res in grequests.map(rs):
-    #     res.encoding = 'gb2312'
-        
-    #     # print(res.text)
-    #     # print(res.content)
-    #     # t = res.content
-    #     t = res.text
-    #     d = PyQuery(t)
-    #     l = d('.content .company_category')
-    #     for k in l:
-    #     	print(k)
     #     # print(l.decode('UTF-8').encode('gb2312'))
