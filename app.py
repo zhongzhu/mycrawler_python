@@ -40,16 +40,22 @@ def getCompanyList(companyCategoryList):
     ret = map(getCompanyListUrlsForOneCategory, companyCategoryList)            
     return list(itertools.chain.from_iterable(ret)) # flatten the list
 
-if __name__ == "__main__":
-
+def getCompanyUrls():
+    """ craw URLs for all companies listed on 'http://www.bioon.com.cn/corporation/'
+    """
     companyCategoryList = getCompanyCategoryList()
-    # companyCategoryList = companyCategoryList[0:1]
-    # print(companyCategoryList)
-
     companyList = getCompanyList(companyCategoryList)
     # print(companyList)
+
     with open('companyList.json', 'w') as f:
         json.dump(companyList, f)
 
+if __name__ == "__main__":
+    import time
 
-    #     # print(l.decode('UTF-8').encode('gb2312'))
+    t1 = time.time()
+    getCompanyUrls()
+    t2 = time.time()
+
+    print(t2 - t1) #was 81 secs
+
