@@ -50,12 +50,49 @@ def getCompanyUrls():
     with open('companyList.json', 'w') as f:
         json.dump(companyList, f)
 
+def getCompanyUrlsFast():        
+    """ craw URLs for all companies listed on 'http://www.bioon.com.cn/corporation/'
+    """
+    #
+    categoryFirstPageUrls = pq(filename = './index.html')('.content .company_category').map(
+        lambda: pq(this).next()('li .tt a').map(
+            lambda: baseURL + pq(this).attr('href')))    
+
+    # print(list(categoryFirstPageUrls))
+
+    #
+    def getAllPageUrlsForOneCategory(categoryFirstPageUrl, res):
+        m = re.search(r'page=(\d+)', pq(res.text)('.seasonnav ul li:last a').attr('href'))
+        if m:
+            return [categoryFirstPageUrl + '&page=' + str(i) for i in range(1, int(m.group(1)) + 1)]
+        else:
+            return []    
+
+    allPageUrls = list(itertools.chain.from_iterable( # flatten [[],[],[]]
+                    map(getAllPageUrlsForOneCategory, 
+                        categoryFirstPageUrls, 
+                        grequests.map((grequests.get(u) for u in categoryFirstPageUrls)))))
+    # print(allPageUrls)
+
+    # #
+    # companyList = []
+    # for res in grequests.map((grequests.get(u) for u in allPageUrls), size = 10):
+    #     companyList.extend(pq(res.text)('.feature span a').map(lambda: pq(this).attr('href')))
+
+    companyList = [pq(res.text)('.feature span a').map(lambda: pq(this).attr('href'))
+                    for res in grequests.map((grequests.get(u) for u in allPageUrls), size = 10)]
+    companyList = list(itertools.chain.from_iterable(companyList))
+
+    with open('companyListFast.json', 'w') as f:
+        json.dump(companyList, f)
+
 if __name__ == "__main__":
     import time
 
     t1 = time.time()
-    getCompanyUrls()
+    # getCompanyUrlsFast() # was 161 secs
+    getCompanyUrls() #was 216 secs
     t2 = time.time()
 
-    print(t2 - t1) #was 81 secs
+    print(t2 - t1) 
 
