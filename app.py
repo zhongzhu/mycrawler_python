@@ -79,9 +79,9 @@ def getCompanyUrlsFast():
     # for res in grequests.map((grequests.get(u) for u in allPageUrls), size = 10):
     #     companyList.extend(pq(res.text)('.feature span a').map(lambda: pq(this).attr('href')))
 
-    companyList = [pq(res.text)('.feature span a').map(lambda: pq(this).attr('href'))
-                    for res in grequests.map((grequests.get(u) for u in allPageUrls), size = 10)]
-    companyList = list(itertools.chain.from_iterable(companyList))
+    companyList = list(itertools.chain.from_iterable(
+        [pq(res.text)('.feature span a').map(lambda: pq(this).attr('href'))
+            for res in grequests.map((grequests.get(u) for u in allPageUrls), size = 10)]))    
 
     with open('companyListFast.json', 'w') as f:
         json.dump(companyList, f)
