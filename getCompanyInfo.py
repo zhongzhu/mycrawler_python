@@ -1,4 +1,5 @@
-#coding:utf-8
+# -*- coding: utf-8 -*-
+
 import grequests
 from pyquery import PyQuery as pq
 import requests
@@ -11,8 +12,12 @@ def extractCompanyInfo(url, response):
     response.encoding = 'gb2312'
     q = pq(response.text)
 
+    # print(type(intro))
+    # print(intro)
+    # print(intro.encode('gb2312'))
+
     return {'name': q('#wrap #head .name h1').text(),
-        'intro': q('.about p').text(),
+        'intro': q('.about p').contents()[0],
         'url': url}
 
 if __name__ == "__main__":
@@ -24,9 +29,9 @@ if __name__ == "__main__":
     f.close()
 
     #   
-    companyUrls = companyUrls[0:50]
+    companyUrls = companyUrls[0:1]
     companyInfo = map(extractCompanyInfo, companyUrls,
-        grequests.map((grequests.get(u) for u in companyUrls), size = 5))
+        grequests.map((grequests.get(u) for u in companyUrls), size = 1))
 
     # save company info in file companyInfo.json
     with open('companyInfo.json', 'w') as f:
